@@ -20,9 +20,10 @@ filegroup(
     srcs = glob(["**"]),
 )
 
-filegroup(
-    name = "cbindgen-cli",
-    srcs = ["@cbindgen//file"],
+alias(
+    name = "cbindgen",
+    actual = "@crate_index//:cbindgen__cbindgen",
+    tags = ["manual"],
 )
 
 genrule(
@@ -31,11 +32,18 @@ genrule(
         "//:all_srcs",
         "Cargo.toml",
         "cbindgen.toml",
-        ":cbindgen-cli",
+        ":cbindgen",
     ],
     outs = ["include/iox2/iceoryx2.h"],
     # this is actually just 'cbindgen iceoryx2-ffi/c --quiet --config iceoryx2-ffi/c/cbindgen.toml --output include/iox2/iceoryx2.h'
-    cmd = "$(execpath :cbindgen-cli) $$(dirname $(location Cargo.toml)) --quiet --config $(location cbindgen.toml) --output $(OUTS)",
+    cmd = """
+export PATH=$$(dirname $$(realpath $(location @rules_rust//rust/toolchain:current_cargo_files))):$$PATH
+export CARGO_HOME=$(BINDIR)/cargo/home
+$(execpath :cbindgen) $$(dirname $(location Cargo.toml)) --quiet --config $(location cbindgen.toml) --output $(OUTS) --clean
+""",
+    tools = [
+        "@rules_rust//rust/toolchain:current_cargo_files",
+    ],
 )
 
 rust_shared_library(

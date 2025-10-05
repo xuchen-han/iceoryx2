@@ -15,6 +15,7 @@ package(default_visibility = ["//visibility:public"])
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_rust//cargo:defs.bzl", "cargo_build_script")
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
+load("@rules_rust_bindgen//:defs.bzl", "rust_bindgen")
 
 filegroup(
     name = "all_srcs",
@@ -34,14 +35,14 @@ cc_library(
 )
 
 # Generate the Rust binding file
-genrule(
-    name = "iceoryx2-pal-posix-bindgen",
-    srcs = [
-        "src/c/posix.h",
-        "@bindgen//:bindgen-cli",
+rust_bindgen(
+    name = "posix_generated",
+    cc_lib = ":iceoryx2-pal-posix-c-lib",
+    header = "src/c/posix.h",
+    bindgen_flags = [
+        "--use-core",
+        "--blocklist-type=max_align_t",
     ],
-    outs = ["posix_generated.rs"],
-    cmd = "$(execpath @bindgen//:bindgen-cli) --use-core --blocklist-type max_align_t $(location src/c/posix.h) --output $(OUTS)",
 )
 
 cargo_build_script(
